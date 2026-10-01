@@ -17,9 +17,9 @@ int main(int, char**) {
         return 1;
     }
 
-    SDL_Window* window = SDL_CreateWindow(
-        "Kitenge - pattern studio", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-        kWindowWidth, kWindowHeight, SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
+    SDL_Window* window = SDL_CreateWindow("Kitenge - pattern studio", SDL_WINDOWPOS_CENTERED,
+                                          SDL_WINDOWPOS_CENTERED, kWindowWidth, kWindowHeight,
+                                          SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
     if (!window) {
         std::fprintf(stderr, "SDL_CreateWindow failed: %s\n", SDL_GetError());
         SDL_Quit();
