@@ -22,7 +22,7 @@ file(GLOB_RECURSE KITENGE_SOURCES CONFIGURE_DEPENDS src/*.cpp)
 
 add_executable(kitenge ${KITENGE_SOURCES})
 target_include_directories(kitenge PRIVATE src)
-target_link_libraries(kitenge PRIVATE ${KITENGE_SDL_TARGET})
+target_link_libraries(kitenge PRIVATE ${KITENGE_SDL_TARGET} imgui)
 
 if(MSVC)
   target_compile_options(kitenge PRIVATE /W4)
