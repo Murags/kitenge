@@ -16,6 +16,8 @@ endif()
 
 include(cmake/Dependencies.cmake)
 
+option(KITENGE_BUILD_TESTS "Build the unit tests" ON)
+
 # Shared warning settings for our own targets (not third-party code).
 add_library(kitenge_warnings INTERFACE)
 if(MSVC)
@@ -36,3 +38,8 @@ target_link_libraries(kitenge_core PUBLIC imgui PRIVATE kitenge_warnings)
 
 add_executable(kitenge src/main.cpp)
 target_link_libraries(kitenge PRIVATE kitenge_core kitenge_warnings)
+
+if(KITENGE_BUILD_TESTS)
+  enable_testing()
+  add_subdirectory(tests)
+endif()
