@@ -1,0 +1,10 @@
+# Local team config
+.env
+.team/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
