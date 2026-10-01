@@ -8,3 +8,9 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+
+# Build output
+build/
+cmake-build-*/
+.cache/
+compile_commands.json
