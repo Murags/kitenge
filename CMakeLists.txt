@@ -16,16 +16,30 @@ endif()
 
 include(cmake/Dependencies.cmake)
 
-# Sources are picked up from src/ automatically, so adding a file to a
-# module never needs an edit here.
-file(GLOB_RECURSE KITENGE_SOURCES CONFIGURE_DEPENDS src/*.cpp)
+option(KITENGE_BUILD_TESTS "Build the unit tests" ON)
 
-add_executable(kitenge ${KITENGE_SOURCES})
-target_include_directories(kitenge PRIVATE src)
-target_link_libraries(kitenge PRIVATE ${KITENGE_SDL_TARGET} imgui)
-
+# Shared warning settings for our own targets (not third-party code).
+add_library(kitenge_warnings INTERFACE)
 if(MSVC)
-  target_compile_options(kitenge PRIVATE /W4)
+  target_compile_options(kitenge_warnings INTERFACE /W4)
 else()
-  target_compile_options(kitenge PRIVATE -Wall -Wextra -Wpedantic)
+  target_compile_options(kitenge_warnings INTERFACE -Wall -Wextra -Wpedantic)
+endif()
+
+# Everything except main.cpp goes into a library, so the app and the tests
+# build the same code. Sources are picked up from src/ automatically, so
+# adding a file to a module never needs an edit here.
+file(GLOB_RECURSE KITENGE_SOURCES CONFIGURE_DEPENDS src/*.cpp)
+list(REMOVE_ITEM KITENGE_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
+
+add_library(kitenge_core STATIC ${KITENGE_SOURCES})
+target_include_directories(kitenge_core PUBLIC src)
+target_link_libraries(kitenge_core PUBLIC imgui PRIVATE kitenge_warnings)
+
+add_executable(kitenge src/main.cpp)
+target_link_libraries(kitenge PRIVATE kitenge_core kitenge_warnings)
+
+if(KITENGE_BUILD_TESTS)
+  enable_testing()
+  add_subdirectory(tests)
 endif()
