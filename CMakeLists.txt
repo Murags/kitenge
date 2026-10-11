@@ -39,6 +39,10 @@ target_link_libraries(kitenge_core PUBLIC imgui PRIVATE kitenge_warnings)
 add_executable(kitenge src/main.cpp)
 target_link_libraries(kitenge PRIVATE kitenge_core kitenge_warnings)
 
+# Headless tool that renders one image per graphics technique into BMP files.
+add_executable(kitenge_gallery tools/gallery.cpp)
+target_link_libraries(kitenge_gallery PRIVATE kitenge_core kitenge_warnings)
+
 if(KITENGE_BUILD_TESTS)
   enable_testing()
   add_subdirectory(tests)
