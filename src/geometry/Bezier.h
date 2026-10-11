@@ -19,9 +19,15 @@ constexpr Vec2 point(Vec2 p0, Vec2 p1, Vec2 p2, Vec2 p3, float t) {
     return lerp(d, e, t);
 }
 
-// Planned for Phase 3: turn a Bezier outline into a polygon with `steps`
-// points per piece, so the curved motifs can be drawn and filled like any
-// other polygon.
+// de Casteljau for a curve of any degree: control.size() - 1. Returns the
+// origin for an empty control polygon.
+Vec2 point(const std::vector<Vec2>& control, float t);
+
+// Samples one curve at `steps` + 1 evenly spaced parameters, both ends included.
+std::vector<Vec2> sample(const std::vector<Vec2>& control, int steps);
+
+// Turns a closed Bezier outline into a polygon with `steps` points per piece,
+// so the curved motifs can be drawn and filled like any other polygon.
 Polygon flatten(const BezierPath& path, int steps);
 
 }  // namespace kitenge::bezier
