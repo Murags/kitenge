@@ -25,8 +25,15 @@ struct TilePlacement {
     int order = 0;
 };
 
-// Planned for Phase 3: lay copies of a motif across a canvas of the given
-// size. Tiles are `tileSize` pixels square with `spacing` pixels between them.
+// Lays copies of a motif across a canvas of the given size. Tiles are
+// `tileSize` pixels square with `spacing` pixels between them; the grid is
+// centred on the canvas and runs past its edges so the pattern has no border
+// (the renderer clips the partial tiles).
+//
+// Checkpoint 1 places every copy with a window-to-viewport transform (scale
+// the unit tile to `tileSize`, translate it to its cell), whatever the rule.
+// The per-cell rotations and reflections of the 4-fold and Mirror rules are
+// added in Checkpoint 2.
 std::vector<TilePlacement> layoutTiles(SymmetryRule rule, int tileSize, int spacing,
                                        int canvasWidth, int canvasHeight);
 
