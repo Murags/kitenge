@@ -15,7 +15,8 @@ enum PaletteSlot : int {
     kInk = 3,
 };
 
-// The built-in motifs, in the order the control panel lists them. Each is built only from the
+// The six built-in motifs, in the order the control panel lists them:
+// Leaf, Diamond, Triangle, Cross, Ring, Bow. Each is built only from the
 // primitives in Motif.h, inside the tile square (-0.5, -0.5) to (0.5, 0.5).
 const std::vector<Motif>& builtinMotifs();
 
