@@ -8,6 +8,7 @@
 
 #include "core/Framebuffer.h"
 #include "core/PatternSettings.h"
+#include "render/PatternRenderer.h"
 #include "ui/CanvasView.h"
 #include "ui/StudioLayout.h"
 
@@ -16,12 +17,10 @@ namespace {
 constexpr int kWindowWidth = 1280;
 constexpr int kWindowHeight = 800;
 
-// Redraws the whole pattern into the framebuffer. Until the symmetry engine
-// is in place the canvas is only cleared to the background colour.
+// Redraws the whole pattern into the framebuffer with our own rasteriser.
 void renderPattern(kitenge::Framebuffer& fb, const kitenge::PatternSettings& settings,
                    kitenge::StudioStatus& status) {
-    fb.clear(settings.background);
-    status.tilesDrawn = 0;
+    status.tilesDrawn = kitenge::render::drawPattern(fb, settings, settings.render);
 }
 
 }  // namespace
