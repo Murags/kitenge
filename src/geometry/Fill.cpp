@@ -98,4 +98,49 @@ void polygon(Framebuffer& fb, const Polygon& poly, Color fill) {
     }
 }
 
+namespace {
+
+struct Seed {
+    int x;
+    int y;
+};
+
+// Shared 4-connected region fill. The recursive textbook version is turned
+// into an explicit stack so large regions cannot overflow the call stack.
+template <typename ShouldPaint>
+void regionFill(Framebuffer& fb, int x, int y, Color fill, ShouldPaint shouldPaint) {
+    std::vector<Seed> stack{{x, y}};
+    while (!stack.empty()) {
+        const Seed s = stack.back();
+        stack.pop_back();
+        if (!fb.contains(s.x, s.y) || !shouldPaint(fb.getPixel(s.x, s.y))) {
+            continue;
+        }
+        fb.setPixel(s.x, s.y, fill);
+        stack.push_back({s.x + 1, s.y});
+        stack.push_back({s.x - 1, s.y});
+        stack.push_back({s.x, s.y + 1});
+        stack.push_back({s.x, s.y - 1});
+    }
+}
+
+}  // namespace
+
+void boundaryFill(Framebuffer& fb, int x, int y, Color fill, Color boundary) {
+    // Painting a pixel that already has the fill colour would never end the
+    // walk, so those pixels are treated like the boundary.
+    regionFill(fb, x, y, fill, [&](Color c) { return c != boundary && c != fill; });
+}
+
+void floodFill(Framebuffer& fb, int x, int y, Color fill) {
+    if (!fb.contains(x, y)) {
+        return;
+    }
+    const Color target = fb.getPixel(x, y);
+    if (target == fill) {
+        return;
+    }
+    regionFill(fb, x, y, fill, [&](Color c) { return c == target; });
+}
+
 }  // namespace kitenge::fill
