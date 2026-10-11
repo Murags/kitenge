@@ -1,4 +1,7 @@
+#include "raster/Clip.h"
+
 #include <cmath>
+#include <utility>
 
 #include "raster/Raster.h"
 
@@ -28,7 +31,71 @@ int outcode(double x, double y, int xmin, int ymin, int xmax, int ymax) {
     return code;
 }
 
+enum class Edge { Left, Right, Top, Bottom };
+
+bool inside(Vec2 p, Edge edge, const ClipRect& w) {
+    switch (edge) {
+        case Edge::Left:
+            return p.x >= w.xmin;
+        case Edge::Right:
+            return p.x <= w.xmax;
+        case Edge::Top:
+            return p.y >= w.ymin;
+        case Edge::Bottom:
+            return p.y <= w.ymax;
+    }
+    return false;
+}
+
+// Where the segment a-b crosses the line of the given window edge.
+Vec2 intersect(Vec2 a, Vec2 b, Edge edge, const ClipRect& w) {
+    float t = 0.0f;
+    switch (edge) {
+        case Edge::Left:
+            t = (w.xmin - a.x) / (b.x - a.x);
+            return {w.xmin, a.y + (b.y - a.y) * t};
+        case Edge::Right:
+            t = (w.xmax - a.x) / (b.x - a.x);
+            return {w.xmax, a.y + (b.y - a.y) * t};
+        case Edge::Top:
+            t = (w.ymin - a.y) / (b.y - a.y);
+            return {a.x + (b.x - a.x) * t, w.ymin};
+        case Edge::Bottom:
+            t = (w.ymax - a.y) / (b.y - a.y);
+            return {a.x + (b.x - a.x) * t, w.ymax};
+    }
+    return a;
+}
+
 }  // namespace
+
+Polygon clipPolygon(const Polygon& poly, const ClipRect& window) {
+    std::vector<Vec2> output = poly.points;
+    for (Edge edge : {Edge::Left, Edge::Right, Edge::Top, Edge::Bottom}) {
+        if (output.empty()) {
+            break;
+        }
+        std::vector<Vec2> input;
+        std::swap(input, output);
+
+        // Walk each edge (prev -> curr) and apply the four Sutherland-Hodgman cases.
+        Vec2 prev = input.back();
+        for (Vec2 curr : input) {
+            const bool currIn = inside(curr, edge, window);
+            const bool prevIn = inside(prev, edge, window);
+            if (currIn) {
+                if (!prevIn) {
+                    output.push_back(intersect(prev, curr, edge, window));  // out -> in
+                }
+                output.push_back(curr);  // in -> in (and the end of out -> in)
+            } else if (prevIn) {
+                output.push_back(intersect(prev, curr, edge, window));  // in -> out
+            }
+            prev = curr;  // out -> out adds nothing
+        }
+    }
+    return Polygon{output};
+}
 
 bool clipLine(int& x0, int& y0, int& x1, int& y1, int xmin, int ymin, int xmax, int ymax) {
     // Work in doubles so repeated intersections do not accumulate rounding.
