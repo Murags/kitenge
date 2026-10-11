@@ -5,7 +5,9 @@
 #include <imgui_impl_sdlrenderer2.h>
 
 #include <cstdio>
+#include <cstdlib>
 #include <string>
+#include <vector>
 
 #include "core/Framebuffer.h"
 #include "core/PatternSettings.h"
@@ -25,9 +27,52 @@ void renderPattern(kitenge::Framebuffer& fb, const kitenge::PatternSettings& set
     status.tilesDrawn = kitenge::render::drawPattern(fb, settings, settings.render);
 }
 
+struct Options {
+    const char* screenshotPath = nullptr;  // save the window and quit
+    int motifIndex = 0;
+};
+
+Options parseOptions(int argc, char** argv) {
+    Options o;
+    for (int i = 1; i < argc; ++i) {
+        const std::string arg = argv[i];
+        if (arg == "--screenshot" && i + 1 < argc) {
+            o.screenshotPath = argv[++i];
+        } else if (arg == "--motif" && i + 1 < argc) {
+            o.motifIndex = std::atoi(argv[++i]);
+        } else {
+            std::fprintf(stderr, "usage: kitenge [--motif N] [--screenshot file.bmp]\n");
+        }
+    }
+    return o;
+}
+
+// Copies the whole window (control panel and canvas) into a Framebuffer and
+// saves it as a BMP, for documentation screenshots.
+bool saveWindow(SDL_Renderer* renderer, const char* path) {
+    int w = 0;
+    int h = 0;
+    if (SDL_GetRendererOutputSize(renderer, &w, &h) != 0) {
+        return false;
+    }
+    std::vector<kitenge::Color> pixels(static_cast<std::size_t>(w) * static_cast<std::size_t>(h));
+    if (SDL_RenderReadPixels(renderer, nullptr, SDL_PIXELFORMAT_RGBA32, pixels.data(),
+                             w * static_cast<int>(sizeof(kitenge::Color))) != 0) {
+        return false;
+    }
+    kitenge::Framebuffer shot(w, h);
+    for (int y = 0; y < h; ++y) {
+        for (int x = 0; x < w; ++x) {
+            shot.setPixel(x, y, pixels[static_cast<std::size_t>(y) * w + x]);
+        }
+    }
+    return kitenge::writeBmp(shot, path);
+}
+
 }  // namespace
 
-int main(int, char**) {
+int main(int argc, char** argv) {
+    const Options options = parseOptions(argc, argv);
     SDL_SetMainReady();
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         std::fprintf(stderr, "SDL_Init failed: %s\n", SDL_GetError());
@@ -70,6 +115,8 @@ int main(int, char**) {
 
     {
         kitenge::PatternSettings settings;
+        settings.motifIndex = options.motifIndex;
+        int framesDrawn = 0;
         kitenge::StudioStatus status;
         kitenge::Framebuffer framebuffer;
         kitenge::CanvasView canvas(renderer);
@@ -131,6 +178,14 @@ int main(int, char**) {
             SDL_SetRenderDrawColor(renderer, 0xFA, 0xEC, 0xDA, 0xFF);
             SDL_RenderClear(renderer);
             ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), renderer);
+            // A few frames let the layout settle before the screenshot.
+            if (options.screenshotPath && ++framesDrawn == 5) {
+                if (!saveWindow(renderer, options.screenshotPath)) {
+                    std::fprintf(stderr, "could not save %s: %s\n", options.screenshotPath,
+                                 SDL_GetError());
+                }
+                running = false;
+            }
             SDL_RenderPresent(renderer);
         }
     }  // the canvas texture must be released before the renderer
