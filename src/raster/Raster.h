@@ -18,6 +18,10 @@ void lineBresenham(Framebuffer& fb, int x0, int y0, int x1, int y1, Color color)
 // Midpoint circle outline centred on (cx, cy).
 void circle(Framebuffer& fb, int cx, int cy, int radius, Color color);
 
+// Solid disc: the same midpoint stepping, but each pair of symmetric points
+// is joined by a horizontal span.
+void fillCircle(Framebuffer& fb, int cx, int cy, int radius, Color color);
+
 // Midpoint ellipse outline centred on (cx, cy) with radii rx and ry.
 void ellipse(Framebuffer& fb, int cx, int cy, int rx, int ry, Color color);
 

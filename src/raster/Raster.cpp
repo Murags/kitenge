@@ -6,6 +6,37 @@
 
 namespace kitenge::raster {
 
+namespace {
+
+void span(Framebuffer& fb, int y, int xFrom, int xTo, Color color) {
+    for (int x = xFrom; x <= xTo; ++x) {
+        fb.setPixel(x, y, color);
+    }
+}
+
+// Midpoint circle stepping over the second octant (x from 0 up to y).
+// `visit(x, y)` is called once per step; callers mirror it into the other
+// seven octants.
+template <typename Visit>
+void midpointCircle(int radius, Visit visit) {
+    int x = 0;
+    int y = radius;
+    int p = 1 - radius;
+    visit(x, y);
+    while (x < y) {
+        ++x;
+        if (p < 0) {
+            p += 2 * x + 1;
+        } else {
+            --y;
+            p += 2 * (x - y) + 1;
+        }
+        visit(x, y);
+    }
+}
+
+}  // namespace
+
 void lineDDA(Framebuffer& fb, int x0, int y0, int x1, int y1, Color color) {
     const int dx = x1 - x0;
     const int dy = y1 - y0;
@@ -64,6 +95,34 @@ void lineBresenham(Framebuffer& fb, int x0, int y0, int x1, int y1, Color color)
             p += 2 * dx;
         }
     }
+}
+
+void circle(Framebuffer& fb, int cx, int cy, int radius, Color color) {
+    if (radius < 0) {
+        return;
+    }
+    midpointCircle(radius, [&](int x, int y) {
+        fb.setPixel(cx + x, cy + y, color);
+        fb.setPixel(cx - x, cy + y, color);
+        fb.setPixel(cx + x, cy - y, color);
+        fb.setPixel(cx - x, cy - y, color);
+        fb.setPixel(cx + y, cy + x, color);
+        fb.setPixel(cx - y, cy + x, color);
+        fb.setPixel(cx + y, cy - x, color);
+        fb.setPixel(cx - y, cy - x, color);
+    });
+}
+
+void fillCircle(Framebuffer& fb, int cx, int cy, int radius, Color color) {
+    if (radius < 0) {
+        return;
+    }
+    midpointCircle(radius, [&](int x, int y) {
+        span(fb, cy + y, cx - x, cx + x, color);
+        span(fb, cy - y, cx - x, cx + x, color);
+        span(fb, cy + x, cx - y, cx + y, color);
+        span(fb, cy - x, cx - y, cx + y, color);
+    });
 }
 
 }  // namespace kitenge::raster
