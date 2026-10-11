@@ -35,6 +35,50 @@ void midpointCircle(int radius, Visit visit) {
     }
 }
 
+// Midpoint ellipse over the first quadrant, from (0, ry) to (rx, 0).
+// Region 1 steps in x while the slope is shallower than -1, region 2 steps
+// in y for the rest. Squared radii are kept in 64-bit integers so large
+// ellipses cannot overflow.
+template <typename Visit>
+void midpointEllipse(int rx, int ry, Visit visit) {
+    const long long rx2 = static_cast<long long>(rx) * rx;
+    const long long ry2 = static_cast<long long>(ry) * ry;
+    int x = 0;
+    int y = ry;
+    long long px = 0;
+    long long py = 2 * rx2 * y;
+
+    // Decision parameters are scaled by 4 so they stay integers.
+    long long p1 = 4 * ry2 - 4 * rx2 * ry + rx2;
+    visit(x, y);
+    while (px < py) {
+        ++x;
+        px += 2 * ry2;
+        if (p1 < 0) {
+            p1 += 4 * (ry2 + px);
+        } else {
+            --y;
+            py -= 2 * rx2;
+            p1 += 4 * (ry2 + px - py);
+        }
+        visit(x, y);
+    }
+
+    long long p2 = ry2 * (2 * x + 1) * (2 * x + 1) + 4 * rx2 * (y - 1) * (y - 1) - 4 * rx2 * ry2;
+    while (y > 0) {
+        --y;
+        py -= 2 * rx2;
+        if (p2 > 0) {
+            p2 += 4 * (rx2 - py);
+        } else {
+            ++x;
+            px += 2 * ry2;
+            p2 += 4 * (rx2 - py + px);
+        }
+        visit(x, y);
+    }
+}
+
 }  // namespace
 
 void lineDDA(Framebuffer& fb, int x0, int y0, int x1, int y1, Color color) {
@@ -122,6 +166,36 @@ void fillCircle(Framebuffer& fb, int cx, int cy, int radius, Color color) {
         span(fb, cy - y, cx - x, cx + x, color);
         span(fb, cy + x, cx - y, cx + y, color);
         span(fb, cy - x, cx - y, cx + y, color);
+    });
+}
+
+void ellipse(Framebuffer& fb, int cx, int cy, int rx, int ry, Color color) {
+    if (rx < 0 || ry < 0) {
+        return;
+    }
+    if (rx == 0 || ry == 0) {
+        lineBresenham(fb, cx - rx, cy - ry, cx + rx, cy + ry, color);
+        return;
+    }
+    midpointEllipse(rx, ry, [&](int x, int y) {
+        fb.setPixel(cx + x, cy + y, color);
+        fb.setPixel(cx - x, cy + y, color);
+        fb.setPixel(cx + x, cy - y, color);
+        fb.setPixel(cx - x, cy - y, color);
+    });
+}
+
+void fillEllipse(Framebuffer& fb, int cx, int cy, int rx, int ry, Color color) {
+    if (rx < 0 || ry < 0) {
+        return;
+    }
+    if (rx == 0 || ry == 0) {
+        lineBresenham(fb, cx - rx, cy - ry, cx + rx, cy + ry, color);
+        return;
+    }
+    midpointEllipse(rx, ry, [&](int x, int y) {
+        span(fb, cy + y, cx - x, cx + x, color);
+        span(fb, cy - y, cx - x, cx + x, color);
     });
 }
 
