@@ -5,9 +5,9 @@
 
 namespace kitenge::raster {
 
-// Planned primitives for Phase 2. Each one writes pixels only through
-// Framebuffer::setPixel. They are declared here so the other modules can code
-// against them now; definitions arrive with the matching lab.
+// The low-level primitives every shape on the canvas is built from. Each one
+// writes pixels only through Framebuffer::setPixel, which ignores pixels that
+// fall outside the buffer.
 
 // Digital differential analyser line from (x0, y0) to (x1, y1), inclusive.
 void lineDDA(Framebuffer& fb, int x0, int y0, int x1, int y1, Color color);
