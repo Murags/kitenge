@@ -49,7 +49,18 @@ struct BezierPath {
     std::vector<CubicSegment> segments;
 };
 
-using Primitive = std::variant<Segment, Polygon, Circle, Ellipse, BezierPath>;
+enum class SplineKind {
+    CatmullRom,  // passes through every point
+    BSpline,     // smoother, pulled towards the points
+};
+
+// A closed, smooth outline through (or near) a ring of points, e.g. a petal.
+struct SplinePath {
+    std::vector<Vec2> points;
+    SplineKind kind = SplineKind::CatmullRom;
+};
+
+using Primitive = std::variant<Segment, Polygon, Circle, Ellipse, BezierPath, SplinePath>;
 
 // No palette entry: used to leave a shape unfilled or without an outline.
 constexpr int kNoColor = -1;
