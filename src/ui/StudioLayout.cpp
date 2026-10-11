@@ -47,14 +47,15 @@ StudioActions drawTopBar() {
     buttonsWidth += style.ItemSpacing.x * 2.0f;
     ImGui::SameLine(ImGui::GetContentRegionMax().x - buttonsWidth);
 
-    // Wired up as the matching features land (animation, OpenGL, export).
+    // Animation is Checkpoint 2 and the 3D preview Checkpoint 3.
     ImGui::BeginDisabled();
     actions.animate = ImGui::Button(labels[0]);
     ImGui::SameLine();
     actions.preview3d = ImGui::Button(labels[1]);
+    ImGui::EndDisabled();
     ImGui::SameLine();
     actions.exportImage = ImGui::Button(labels[2]);
-    ImGui::EndDisabled();
+    ImGui::SetItemTooltip("Save the canvas as a BMP image");
 
     ImGui::Separator();
     return actions;
@@ -174,8 +175,9 @@ StudioFrame drawStudio(PatternSettings& settings, const CanvasView& canvas,
             ImVec2(static_cast<float>(frame.canvasWidth), static_cast<float>(frame.canvasHeight)));
     }
 
-    ImGui::TextDisabled("%s - tile %d px - %d tiles drawn - all primitives rasterised in-house",
-                        toString(settings.rule), settings.tileSize, status.tilesDrawn);
+    ImGui::TextDisabled("%s - tile %d px - %d tiles drawn - all primitives rasterised in-house%s%s",
+                        toString(settings.rule), settings.tileSize, status.tilesDrawn,
+                        status.message.empty() ? "" : " - ", status.message.c_str());
     ImGui::EndGroup();
 
     ImGui::End();

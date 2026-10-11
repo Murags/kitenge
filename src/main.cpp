@@ -5,9 +5,11 @@
 #include <imgui_impl_sdlrenderer2.h>
 
 #include <cstdio>
+#include <string>
 
 #include "core/Framebuffer.h"
 #include "core/PatternSettings.h"
+#include "motifs/Export.h"
 #include "render/PatternRenderer.h"
 #include "ui/CanvasView.h"
 #include "ui/StudioLayout.h"
@@ -115,6 +117,12 @@ int main(int, char**) {
             canvasHeight = frame.canvasHeight;
             if (settings != before) {
                 dirty = true;
+            }
+            if (frame.actions.exportImage) {
+                const char* path = "kitenge-pattern.bmp";
+                status.message = kitenge::writeBmp(framebuffer, path)
+                                     ? std::string("saved ") + path
+                                     : std::string("could not save ") + path;
             }
 
             ImGui::Render();
