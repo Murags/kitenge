@@ -9,10 +9,8 @@ namespace kitenge::raster {
 // writes pixels only through Framebuffer::setPixel, which ignores pixels that
 // fall outside the buffer.
 
-// Digital differential analyser line from (x0, y0) to (x1, y1), inclusive.
-void lineDDA(Framebuffer& fb, int x0, int y0, int x1, int y1, Color color);
-
-// Bresenham integer line from (x0, y0) to (x1, y1), inclusive.
+// Bresenham integer line from (x0, y0) to (x1, y1), inclusive. This is the
+// only line algorithm in the project: every straight edge and stroke uses it.
 void lineBresenham(Framebuffer& fb, int x0, int y0, int x1, int y1, Color color);
 
 // Midpoint circle outline centred on (cx, cy).

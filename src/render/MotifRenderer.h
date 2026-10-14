@@ -9,22 +9,17 @@
 
 namespace kitenge::render {
 
-enum class LineAlgorithm { Bresenham, DDA };
-
 struct RenderOptions {
     bool fill = true;
     bool outline = true;
-    LineAlgorithm lines = LineAlgorithm::Bresenham;
 };
 
 // A straight line in canvas coordinates: Cohen-Sutherland clips it to the
-// framebuffer, then the chosen line algorithm draws what is left.
-void drawLine(Framebuffer& fb, Vec2 a, Vec2 b, Color color,
-              LineAlgorithm algorithm = LineAlgorithm::Bresenham);
+// framebuffer, then Bresenham draws what is left.
+void drawLine(Framebuffer& fb, Vec2 a, Vec2 b, Color color);
 
 // Closed outline of a polygon in canvas coordinates.
-void drawPolygonOutline(Framebuffer& fb, const Polygon& poly, Color color,
-                        LineAlgorithm algorithm = LineAlgorithm::Bresenham);
+void drawPolygonOutline(Framebuffer& fb, const Polygon& poly, Color color);
 
 // Sutherland-Hodgman clips the polygon to the framebuffer, then the
 // scan-line fill colours it.

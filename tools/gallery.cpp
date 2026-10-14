@@ -76,33 +76,28 @@ void dot(Framebuffer& fb, Vec2 p, Color c) {
                        4, c);
 }
 
-// 1. DDA and Bresenham: a fan of lines in every octant, plus a magnified
-//    shallow line from each algorithm.
+// 1. Bresenham: a fan of lines in every octant, plus a magnified shallow and
+//    steep line showing one pixel per step along the major axis.
 void lines() {
     Framebuffer fb(960, 420);
     fb.clear(kPaper);
-    for (int panel = 0; panel < 2; ++panel) {
-        const int cx = 160 + panel * 320;
-        const int cy = 210;
-        for (int i = 0; i < 32; ++i) {
-            const float t = 2.0f * kPi * static_cast<float>(i) / 32.0f;
-            const int x = cx + static_cast<int>(std::lround(150 * std::cos(t)));
-            const int y = cy + static_cast<int>(std::lround(150 * std::sin(t)));
-            if (panel == 0) {
-                raster::lineDDA(fb, cx, cy, x, y, i % 2 ? kGreen : kTerracotta);
-            } else {
-                raster::lineBresenham(fb, cx, cy, x, y, i % 2 ? kGreen : kBlue);
-            }
-        }
+    const int cx = 240;
+    const int cy = 210;
+    for (int i = 0; i < 32; ++i) {
+        const float t = 2.0f * kPi * static_cast<float>(i) / 32.0f;
+        const int x = cx + static_cast<int>(std::lround(180 * std::cos(t)));
+        const int y = cy + static_cast<int>(std::lround(180 * std::sin(t)));
+        raster::lineBresenham(fb, cx, cy, x, y, i % 2 ? kGreen : kBlue);
     }
-    Framebuffer small(21, 9);
-    small.clear(kPaper);
-    raster::lineDDA(small, 0, 1, 20, 7, kTerracotta);
-    magnify(small, fb, 680, 40, 12);
-    small.clear(kPaper);
-    raster::lineBresenham(small, 0, 1, 20, 7, kBlue);
-    magnify(small, fb, 680, 260, 12);
-    save(fb, "01-lines-dda-bresenham");
+    Framebuffer shallow(21, 9);
+    shallow.clear(kPaper);
+    raster::lineBresenham(shallow, 0, 1, 20, 7, kBlue);
+    magnify(shallow, fb, 520, 40, 12);
+    Framebuffer steep(9, 21);
+    steep.clear(kPaper);
+    raster::lineBresenham(steep, 1, 0, 7, 20, kTerracotta);
+    magnify(steep, fb, 520 + 21 * 12 + 40, 40, 12);
+    save(fb, "01-lines-bresenham");
 }
 
 // 2. Midpoint circles and ellipses, outline and filled, plus a magnified circle.
@@ -258,10 +253,9 @@ void motifs() {
         const float cx = 90.0f + 156.0f * static_cast<float>(i);
         render::drawMotif(fb, all[i], Mat3::translate(cx, 90) * Mat3::scale(140, 140),
                           kDefaults.palette);
-        // Second row: the same motif as outline only, drawn with DDA.
+        // Second row: the same motif as outline only.
         render::RenderOptions outlineOnly;
         outlineOnly.fill = false;
-        outlineOnly.lines = render::LineAlgorithm::DDA;
         render::drawMotif(fb, all[i], Mat3::translate(cx, 250) * Mat3::scale(140, 140),
                           kDefaults.palette, outlineOnly);
     }

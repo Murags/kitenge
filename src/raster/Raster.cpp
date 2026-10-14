@@ -81,27 +81,6 @@ void midpointEllipse(int rx, int ry, Visit visit) {
 
 }  // namespace
 
-void lineDDA(Framebuffer& fb, int x0, int y0, int x1, int y1, Color color) {
-    const int dx = x1 - x0;
-    const int dy = y1 - y0;
-    const int steps = std::max(std::abs(dx), std::abs(dy));
-    if (steps == 0) {
-        fb.setPixel(x0, y0, color);
-        return;
-    }
-
-    // Step one pixel along the major axis and a fraction along the other.
-    const double xInc = static_cast<double>(dx) / steps;
-    const double yInc = static_cast<double>(dy) / steps;
-    double x = x0;
-    double y = y0;
-    for (int i = 0; i <= steps; ++i) {
-        fb.setPixel(static_cast<int>(std::lround(x)), static_cast<int>(std::lround(y)), color);
-        x += xInc;
-        y += yInc;
-    }
-}
-
 void lineBresenham(Framebuffer& fb, int x0, int y0, int x1, int y1, Color color) {
     const int dx = std::abs(x1 - x0);
     const int dy = std::abs(y1 - y0);

@@ -92,7 +92,7 @@ void drawRound(Framebuffer& fb, Vec2 centre, float rx, float ry, const Mat3& m, 
             fillPolygon(fb, poly, paletteColor(palette, fillIndex));
         }
         if (opt.outline && strokeIndex != kNoColor) {
-            drawPolygonOutline(fb, poly, paletteColor(palette, strokeIndex), opt.lines);
+            drawPolygonOutline(fb, poly, paletteColor(palette, strokeIndex));
         }
         return;
     }
@@ -126,29 +126,24 @@ void drawOutlined(Framebuffer& fb, const Polygon& screen, int fillIndex, int str
         fillPolygon(fb, screen, paletteColor(palette, fillIndex));
     }
     if (opt.outline && strokeIndex != kNoColor) {
-        drawPolygonOutline(fb, screen, paletteColor(palette, strokeIndex), opt.lines);
+        drawPolygonOutline(fb, screen, paletteColor(palette, strokeIndex));
     }
 }
 
 }  // namespace
 
-void drawLine(Framebuffer& fb, Vec2 a, Vec2 b, Color color, LineAlgorithm algorithm) {
+void drawLine(Framebuffer& fb, Vec2 a, Vec2 b, Color color) {
     int x0 = toPixel(a.x), y0 = toPixel(a.y), x1 = toPixel(b.x), y1 = toPixel(b.y);
     if (!raster::clipLine(x0, y0, x1, y1, 0, 0, fb.width() - 1, fb.height() - 1)) {
         return;
     }
-    if (algorithm == LineAlgorithm::DDA) {
-        raster::lineDDA(fb, x0, y0, x1, y1, color);
-    } else {
-        raster::lineBresenham(fb, x0, y0, x1, y1, color);
-    }
+    raster::lineBresenham(fb, x0, y0, x1, y1, color);
 }
 
-void drawPolygonOutline(Framebuffer& fb, const Polygon& poly, Color color,
-                        LineAlgorithm algorithm) {
+void drawPolygonOutline(Framebuffer& fb, const Polygon& poly, Color color) {
     const std::size_t n = poly.points.size();
     for (std::size_t i = 0; i < n; ++i) {
-        drawLine(fb, poly.points[i], poly.points[(i + 1) % n], color, algorithm);
+        drawLine(fb, poly.points[i], poly.points[(i + 1) % n], color);
     }
 }
 
@@ -168,7 +163,7 @@ void drawMotif(Framebuffer& fb, const Motif& motif, const Mat3& transform,
                 if constexpr (std::is_same_v<T, Segment>) {
                     if (options.outline && shape.strokeIndex != kNoColor) {
                         drawLine(fb, transform.apply(g.a), transform.apply(g.b),
-                                 paletteColor(palette, shape.strokeIndex), options.lines);
+                                 paletteColor(palette, shape.strokeIndex));
                     }
                 } else if constexpr (std::is_same_v<T, Polygon>) {
                     drawOutlined(fb, transformed(g, transform), shape.fillIndex, shape.strokeIndex,
