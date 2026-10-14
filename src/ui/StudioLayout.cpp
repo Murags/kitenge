@@ -126,14 +126,6 @@ void drawControls(PatternSettings& settings) {
     ImGui::Checkbox("Fill", &settings.render.fill);
     ImGui::SameLine();
     ImGui::Checkbox("Outline", &settings.render.outline);
-    int lines = settings.render.lines == render::LineAlgorithm::DDA ? 1 : 0;
-    ImGui::TextUnformatted("Lines");
-    ImGui::SameLine();
-    ImGui::RadioButton("Bresenham", &lines, 0);
-    ImGui::SameLine();
-    ImGui::RadioButton("DDA", &lines, 1);
-    settings.render.lines =
-        lines == 1 ? render::LineAlgorithm::DDA : render::LineAlgorithm::Bresenham;
 }
 
 }  // namespace

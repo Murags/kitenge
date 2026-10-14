@@ -64,39 +64,42 @@ float area(const Polygon& poly) {
 
 }  // namespace
 
-TEST_CASE("both line algorithms cover every octant with one pixel per major-axis step") {
+TEST_CASE("Bresenham covers every octant with one pixel per major-axis step") {
     const int ends[][2] = {{19, 4},   {4, 19},   {-4, 19}, {-19, 4},
                            {-19, -4}, {-4, -19}, {4, -19}, {19, -4}};
     for (const auto& e : ends) {
-        for (int algorithm = 0; algorithm < 2; ++algorithm) {
-            Framebuffer fb(41, 41);
-            if (algorithm == 0) {
-                raster::lineBresenham(fb, 20, 20, 20 + e[0], 20 + e[1], kInk);
-            } else {
-                raster::lineDDA(fb, 20, 20, 20 + e[0], 20 + e[1], kInk);
-            }
-            const auto pixels = inked(fb);
-            CHECK(pixels.size() == 20u);
-            CHECK(fb.getPixel(20, 20) == kInk);
-            CHECK(fb.getPixel(20 + e[0], 20 + e[1]) == kInk);
-            CHECK(connected(pixels));
+        Framebuffer fb(41, 41);
+        raster::lineBresenham(fb, 20, 20, 20 + e[0], 20 + e[1], kInk);
+        const auto pixels = inked(fb);
+        CHECK(pixels.size() == 20u);
+        CHECK(fb.getPixel(20, 20) == kInk);
+        CHECK(fb.getPixel(20 + e[0], 20 + e[1]) == kInk);
+        CHECK(connected(pixels));
+    }
+}
+
+TEST_CASE("Bresenham draws horizontal, vertical and diagonal lines exactly") {
+    // {x0, y0, x1, y1, step x, step y}
+    const int lines[][6] = {
+        {0, 5, 10, 5, 1, 0}, {5, 0, 5, 10, 0, 1}, {0, 0, 10, 10, 1, 1}, {10, 0, 0, 10, -1, 1}};
+    for (const auto& l : lines) {
+        Framebuffer fb(11, 11);
+        raster::lineBresenham(fb, l[0], l[1], l[2], l[3], kInk);
+        CHECK(inked(fb).size() == 11u);
+        for (int i = 0; i <= 10; ++i) {
+            CHECK(fb.getPixel(l[0] + i * l[4], l[1] + i * l[5]) == kInk);
         }
     }
 }
 
-TEST_CASE("Bresenham and DDA agree on horizontal, vertical and diagonal lines") {
-    const int ends[][4] = {{0, 5, 10, 5}, {5, 0, 5, 10}, {0, 0, 10, 10}, {10, 0, 0, 10}};
-    for (const auto& e : ends) {
-        Framebuffer a(11, 11);
-        Framebuffer b(11, 11);
-        raster::lineBresenham(a, e[0], e[1], e[2], e[3], kInk);
-        raster::lineDDA(b, e[0], e[1], e[2], e[3], kInk);
-        for (int y = 0; y < 11; ++y) {
-            for (int x = 0; x < 11; ++x) {
-                CHECK(a.getPixel(x, y) == b.getPixel(x, y));
-            }
-        }
-    }
+TEST_CASE("a shallow Bresenham line has one pixel per column in either direction") {
+    Framebuffer forward(21, 9);
+    Framebuffer backward(21, 9);
+    raster::lineBresenham(forward, 0, 1, 20, 7, kInk);
+    raster::lineBresenham(backward, 20, 7, 0, 1, kInk);
+    CHECK(inked(forward).size() == 21u);
+    CHECK(inked(backward).size() == 21u);
+    CHECK(connected(inked(backward)));
 }
 
 TEST_CASE("a single-point line draws one pixel") {

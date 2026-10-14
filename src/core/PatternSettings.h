@@ -27,14 +27,13 @@ struct PatternSettings {
     };
     Color background = Color::fromHex(0xFAEBD7);
 
-    // How each shape is rasterised: fill, outline, and which line algorithm.
+    // How each shape is rasterised: filled, outlined, or both.
     render::RenderOptions render;
 
     bool operator==(const PatternSettings& o) const {
         return motifIndex == o.motifIndex && rule == o.rule && tileSize == o.tileSize &&
                spacing == o.spacing && palette == o.palette && background == o.background &&
-               render.fill == o.render.fill && render.outline == o.render.outline &&
-               render.lines == o.render.lines;
+               render.fill == o.render.fill && render.outline == o.render.outline;
     }
     bool operator!=(const PatternSettings& o) const { return !(*this == o); }
 };
