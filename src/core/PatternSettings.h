@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "core/Color.h"
+#include "render/MotifRenderer.h"
 #include "symmetry/Symmetry.h"
 
 namespace kitenge {
@@ -11,7 +12,9 @@ namespace kitenge {
 // the pattern is redrawn from it whenever it changes.
 struct PatternSettings {
     int motifIndex = 0;
-    SymmetryRule rule = SymmetryRule::FourFold;
+    // Only Translate is drawn differently for now; 4-fold and Mirror arrive
+    // with the transformations in Checkpoint 2.
+    SymmetryRule rule = SymmetryRule::Translate;
     int tileSize = 125;  // pixels
     int spacing = 12;    // pixels between tiles
 
@@ -24,9 +27,14 @@ struct PatternSettings {
     };
     Color background = Color::fromHex(0xFAEBD7);
 
+    // How each shape is rasterised: fill, outline, and which line algorithm.
+    render::RenderOptions render;
+
     bool operator==(const PatternSettings& o) const {
         return motifIndex == o.motifIndex && rule == o.rule && tileSize == o.tileSize &&
-               spacing == o.spacing && palette == o.palette && background == o.background;
+               spacing == o.spacing && palette == o.palette && background == o.background &&
+               render.fill == o.render.fill && render.outline == o.render.outline &&
+               render.lines == o.render.lines;
     }
     bool operator!=(const PatternSettings& o) const { return !(*this == o); }
 };

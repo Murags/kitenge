@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include "core/PatternSettings.h"
 #include "ui/CanvasView.h"
 
@@ -15,6 +17,7 @@ struct StudioActions {
 // Figures reported in the status line under the canvas.
 struct StudioStatus {
     int tilesDrawn = 0;
+    std::string message;  // e.g. where the last export was saved
 };
 
 struct StudioFrame {

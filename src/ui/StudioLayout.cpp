@@ -6,16 +6,14 @@
 #include <cstdint>
 #include <string>
 
+#include "motifs/MotifLibrary.h"
+
 namespace kitenge {
 
 namespace {
 
-// Placeholder names until the motif library provides the six built-in motifs.
-constexpr const char* kMotifNames[] = {"Leaf", "Diamond", "Triangle", "Cross", "Ring", "Bow"};
-constexpr int kMotifCount = sizeof(kMotifNames) / sizeof(kMotifNames[0]);
-
-constexpr SymmetryRule kRules[] = {SymmetryRule::FourFold, SymmetryRule::Mirror,
-                                   SymmetryRule::Translate};
+constexpr SymmetryRule kRules[] = {SymmetryRule::Translate, SymmetryRule::FourFold,
+                                   SymmetryRule::Mirror};
 
 constexpr float kControlsWidth = 300.0f;
 
@@ -49,14 +47,15 @@ StudioActions drawTopBar() {
     buttonsWidth += style.ItemSpacing.x * 2.0f;
     ImGui::SameLine(ImGui::GetContentRegionMax().x - buttonsWidth);
 
-    // Wired up as the matching features land (animation, OpenGL, export).
+    // Animation is Checkpoint 2 and the 3D preview Checkpoint 3.
     ImGui::BeginDisabled();
     actions.animate = ImGui::Button(labels[0]);
     ImGui::SameLine();
     actions.preview3d = ImGui::Button(labels[1]);
+    ImGui::EndDisabled();
     ImGui::SameLine();
     actions.exportImage = ImGui::Button(labels[2]);
-    ImGui::EndDisabled();
+    ImGui::SetItemTooltip("Save the canvas as a BMP image");
 
     ImGui::Separator();
     return actions;
@@ -64,13 +63,14 @@ StudioActions drawTopBar() {
 
 void drawControls(PatternSettings& settings) {
     sectionLabel("Motif");
+    const auto& motifs = builtinMotifs();
     const float cell = (ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x * 2) / 3;
-    for (int i = 0; i < kMotifCount; ++i) {
+    for (int i = 0; i < static_cast<int>(motifs.size()); ++i) {
         if (i % 3 != 0) {
             ImGui::SameLine();
         }
-        if (ImGui::Selectable(kMotifNames[i], settings.motifIndex == i, 0,
-                              ImVec2(cell, cell * 0.6f))) {
+        if (ImGui::Selectable(motifs[static_cast<std::size_t>(i)].name.c_str(),
+                              settings.motifIndex == i, 0, ImVec2(cell, cell * 0.6f))) {
             settings.motifIndex = i;
         }
     }
@@ -80,8 +80,15 @@ void drawControls(PatternSettings& settings) {
         if (i > 0) {
             ImGui::SameLine();
         }
+        // Rotation and reflection per tile are the Checkpoint 2 transformations.
+        const bool available = kRules[i] == SymmetryRule::Translate;
+        ImGui::BeginDisabled(!available);
         if (ImGui::RadioButton(toString(kRules[i]), settings.rule == kRules[i])) {
             settings.rule = kRules[i];
+        }
+        ImGui::EndDisabled();
+        if (!available) {
+            ImGui::SetItemTooltip("Coming in Checkpoint 2 (transformations)");
         }
     }
 
@@ -114,6 +121,19 @@ void drawControls(PatternSettings& settings) {
     if (ImGui::ColorEdit4("##background", &background.x, swatch)) {
         settings.background = fromImVec4(background);
     }
+
+    sectionLabel("Rasterisation");
+    ImGui::Checkbox("Fill", &settings.render.fill);
+    ImGui::SameLine();
+    ImGui::Checkbox("Outline", &settings.render.outline);
+    int lines = settings.render.lines == render::LineAlgorithm::DDA ? 1 : 0;
+    ImGui::TextUnformatted("Lines");
+    ImGui::SameLine();
+    ImGui::RadioButton("Bresenham", &lines, 0);
+    ImGui::SameLine();
+    ImGui::RadioButton("DDA", &lines, 1);
+    settings.render.lines =
+        lines == 1 ? render::LineAlgorithm::DDA : render::LineAlgorithm::Bresenham;
 }
 
 }  // namespace
@@ -155,8 +175,9 @@ StudioFrame drawStudio(PatternSettings& settings, const CanvasView& canvas,
             ImVec2(static_cast<float>(frame.canvasWidth), static_cast<float>(frame.canvasHeight)));
     }
 
-    ImGui::TextDisabled("%s - tile %d px - %d tiles drawn - all primitives rasterised in-house",
-                        toString(settings.rule), settings.tileSize, status.tilesDrawn);
+    ImGui::TextDisabled("%s - tile %d px - %d tiles drawn - all primitives rasterised in-house%s%s",
+                        toString(settings.rule), settings.tileSize, status.tilesDrawn,
+                        status.message.empty() ? "" : " - ", status.message.c_str());
     ImGui::EndGroup();
 
     ImGui::End();
