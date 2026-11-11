@@ -80,15 +80,8 @@ void drawControls(PatternSettings& settings) {
         if (i > 0) {
             ImGui::SameLine();
         }
-        // Rotation and reflection per tile are the Checkpoint 2 transformations.
-        const bool available = kRules[i] == SymmetryRule::Translate;
-        ImGui::BeginDisabled(!available);
         if (ImGui::RadioButton(toString(kRules[i]), settings.rule == kRules[i])) {
             settings.rule = kRules[i];
-        }
-        ImGui::EndDisabled();
-        if (!available) {
-            ImGui::SetItemTooltip("Coming in Checkpoint 2 (transformations)");
         }
     }
 
