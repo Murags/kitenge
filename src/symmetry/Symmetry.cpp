@@ -16,7 +16,40 @@ const char* toString(SymmetryRule rule) {
     return "Unknown";
 }
 
-std::vector<TilePlacement> layoutTiles(SymmetryRule /*rule*/, int tileSize, int spacing,
+namespace {
+
+constexpr float kQuarterTurn = 1.57079632679489662f;
+
+// Parity of a grid index measured from the centre cell, so the middle tile is
+// always the unchanged motif and the pattern stays symmetric about it.
+int parity(int index, int count) {
+    return ((index - count / 2) % 2 + 2) % 2;
+}
+
+// The per-cell part of the transform, applied in tile-local units before the
+// tile is scaled and moved into place.
+Mat3 cellTransform(SymmetryRule rule, int row, int col, int rows, int cols) {
+    const int r = parity(row, rows);
+    const int c = parity(col, cols);
+    switch (rule) {
+        case SymmetryRule::Translate:
+            break;
+        case SymmetryRule::FourFold: {
+            // Each 2x2 block turns a quarter more going clockwise round it:
+            // top-left 0, top-right 90, bottom-right 180, bottom-left 270 degrees.
+            const int quarters = r == 0 ? c : 3 - c;
+            return Mat3::rotate(kQuarterTurn * static_cast<float>(quarters));
+        }
+        case SymmetryRule::Mirror:
+            // Neighbours are reflected across the edge they share.
+            return Mat3::scale(c == 0 ? 1.0f : -1.0f, r == 0 ? 1.0f : -1.0f);
+    }
+    return Mat3::identity();
+}
+
+}  // namespace
+
+std::vector<TilePlacement> layoutTiles(SymmetryRule rule, int tileSize, int spacing,
                                        int canvasWidth, int canvasHeight) {
     std::vector<TilePlacement> tiles;
     if (tileSize <= 0 || canvasWidth <= 0 || canvasHeight <= 0) {
@@ -46,7 +79,8 @@ std::vector<TilePlacement> layoutTiles(SymmetryRule /*rule*/, int tileSize, int 
             }
             TilePlacement t;
             t.transform = Mat3::translate(cx, cy) *
-                          Mat3::scale(static_cast<float>(tileSize), static_cast<float>(tileSize));
+                          Mat3::scale(static_cast<float>(tileSize), static_cast<float>(tileSize)) *
+                          cellTransform(rule, row, col, rows, cols);
             t.row = row;
             t.col = col;
             t.order = static_cast<int>(tiles.size());

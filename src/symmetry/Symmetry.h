@@ -30,10 +30,11 @@ struct TilePlacement {
 // centred on the canvas and runs past its edges so the pattern has no border
 // (the renderer clips the partial tiles).
 //
-// Checkpoint 1 places every copy with a window-to-viewport transform (scale
-// the unit tile to `tileSize`, translate it to its cell), whatever the rule.
-// The per-cell rotations and reflections of the 4-fold and Mirror rules are
-// added in Checkpoint 2.
+// Each copy's transform is translate(cell centre) * scale(tileSize) * cell
+// transform, where the cell transform comes from the rule: identity for
+// Translate, a quarter turn per cell round each 2x2 block for 4-fold, and a
+// reflection on odd columns and/or rows for Mirror. Parity is counted from the
+// centre cell, so the middle tile always shows the motif unchanged.
 std::vector<TilePlacement> layoutTiles(SymmetryRule rule, int tileSize, int spacing,
                                        int canvasWidth, int canvasHeight);
 
