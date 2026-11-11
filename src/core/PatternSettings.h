@@ -12,9 +12,7 @@ namespace kitenge {
 // the pattern is redrawn from it whenever it changes.
 struct PatternSettings {
     int motifIndex = 0;
-    // Only Translate is drawn differently for now; 4-fold and Mirror arrive
-    // with the transformations in Checkpoint 2.
-    SymmetryRule rule = SymmetryRule::Translate;
+    SymmetryRule rule = SymmetryRule::FourFold;
     int tileSize = 125;  // pixels
     int spacing = 12;    // pixels between tiles
 
