@@ -126,6 +126,7 @@ int main(int argc, char** argv) {
         kitenge::DoubleBuffer buffers;
         kitenge::AssemblyPlayer assembly;
         kitenge::CanvasView canvas(renderer);
+        kitenge::ColorPicker picker(renderer);
         int canvasWidth = 0;
         int canvasHeight = 0;
         bool dirty = true;
@@ -173,7 +174,8 @@ int main(int argc, char** argv) {
             ImGui::NewFrame();
 
             const kitenge::PatternSettings before = settings;
-            const kitenge::StudioFrame frame = kitenge::drawStudio(settings, canvas, status);
+            const kitenge::StudioFrame frame =
+                kitenge::drawStudio(settings, canvas, status, picker);
             canvasWidth = frame.canvasWidth;
             canvasHeight = frame.canvasHeight;
             if (settings != before) {

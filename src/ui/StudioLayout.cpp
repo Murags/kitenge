@@ -16,16 +16,11 @@ constexpr SymmetryRule kRules[] = {SymmetryRule::Translate, SymmetryRule::FourFo
                                    SymmetryRule::Mirror};
 
 constexpr float kControlsWidth = 300.0f;
+constexpr int kMinPalette = 2;
+constexpr int kMaxPalette = 8;
 
 ImVec4 toImVec4(Color c) {
     return ImVec4(c.r / 255.0f, c.g / 255.0f, c.b / 255.0f, c.a / 255.0f);
-}
-
-Color fromImVec4(const ImVec4& v) {
-    auto channel = [](float f) {
-        return static_cast<std::uint8_t>(std::clamp(f, 0.0f, 1.0f) * 255.0f + 0.5f);
-    };
-    return Color(channel(v.x), channel(v.y), channel(v.z), channel(v.w));
 }
 
 void sectionLabel(const char* text) {
@@ -62,7 +57,80 @@ StudioActions drawTopBar() {
     return actions;
 }
 
-void drawControls(PatternSettings& settings) {
+// A clickable colour swatch, outlined when it is the one being edited.
+bool swatch(const char* id, Color color, bool selected) {
+    const ImVec2 pos = ImGui::GetCursorScreenPos();
+    const float size = ImGui::GetFrameHeight();
+    const bool clicked =
+        ImGui::ColorButton(id, toImVec4(color), ImGuiColorEditFlags_NoTooltip, ImVec2(size, size));
+    if (selected) {
+        ImGui::GetWindowDrawList()->AddRect(ImVec2(pos.x - 2, pos.y - 2),
+                                            ImVec2(pos.x + size + 2, pos.y + size + 2),
+                                            IM_COL32(0, 0, 0, 255), 0.0f, 0, 2.0f);
+    }
+    return clicked;
+}
+
+void drawColors(PatternSettings& settings, ColorPicker& picker) {
+    const int count = static_cast<int>(settings.palette.size());
+    picker.target = std::clamp(picker.target, 0, count);
+
+    sectionLabel("Palette");
+    for (int i = 0; i < count; ++i) {
+        if (i > 0) {
+            ImGui::SameLine();
+        }
+        ImGui::PushID(i);
+        if (swatch("##palette", settings.palette[static_cast<std::size_t>(i)],
+                   picker.target == i)) {
+            picker.target = i;
+        }
+        ImGui::PopID();
+    }
+
+    // Add a colour (a copy of the selected one) or remove the selected one.
+    // Motifs look colours up by index modulo the palette size, so every
+    // palette length still colours them.
+    ImGui::SameLine();
+    ImGui::BeginDisabled(count >= kMaxPalette);
+    if (ImGui::Button("+", ImVec2(ImGui::GetFrameHeight(), 0))) {
+        const Color copy = picker.target < count
+                               ? settings.palette[static_cast<std::size_t>(picker.target)]
+                               : settings.background;
+        settings.palette.push_back(copy);
+        picker.target = count;
+    }
+    ImGui::EndDisabled();
+    ImGui::SetItemTooltip("Add a colour");
+    ImGui::SameLine();
+    ImGui::BeginDisabled(count <= kMinPalette || picker.target >= count);
+    if (ImGui::Button("-", ImVec2(ImGui::GetFrameHeight(), 0))) {
+        settings.palette.erase(settings.palette.begin() + picker.target);
+        picker.target = std::max(0, picker.target - 1);
+    }
+    ImGui::EndDisabled();
+    ImGui::SetItemTooltip("Remove the selected colour");
+
+    ImGui::Spacing();
+    if (swatch("##background", settings.background,
+               picker.target == static_cast<int>(settings.palette.size()))) {
+        picker.target = static_cast<int>(settings.palette.size());
+    }
+    ImGui::SameLine();
+    ImGui::TextDisabled("background");
+
+    ImGui::Spacing();
+    const int newCount = static_cast<int>(settings.palette.size());
+    if (picker.target > newCount) {
+        picker.target = newCount;
+    }
+    Color& editing = picker.target == newCount
+                         ? settings.background
+                         : settings.palette[static_cast<std::size_t>(picker.target)];
+    picker.draw(editing);
+}
+
+void drawControls(PatternSettings& settings, ColorPicker& picker) {
     sectionLabel("Motif");
     const auto& motifs = builtinMotifs();
     const float cell = (ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x * 2) / 3;
@@ -94,27 +162,7 @@ void drawControls(PatternSettings& settings) {
     ImGui::SetNextItemWidth(-1);
     ImGui::SliderInt("##spacing", &settings.spacing, 0, 60, "%d px");
 
-    // Placeholder swatches using ImGui's picker; our own RGB / HSV picker
-    // replaces this in the interface and colour work.
-    sectionLabel("Palette");
-    const ImGuiColorEditFlags swatch =
-        ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_NoAlpha;
-    for (std::size_t i = 0; i < settings.palette.size(); ++i) {
-        if (i > 0) {
-            ImGui::SameLine();
-        }
-        ImVec4 value = toImVec4(settings.palette[i]);
-        const std::string id = "##palette" + std::to_string(i);
-        if (ImGui::ColorEdit4(id.c_str(), &value.x, swatch)) {
-            settings.palette[i] = fromImVec4(value);
-        }
-    }
-
-    sectionLabel("Background");
-    ImVec4 background = toImVec4(settings.background);
-    if (ImGui::ColorEdit4("##background", &background.x, swatch)) {
-        settings.background = fromImVec4(background);
-    }
+    drawColors(settings, picker);
 
     sectionLabel("Rasterisation");
     ImGui::Checkbox("Fill", &settings.render.fill);
@@ -125,7 +173,7 @@ void drawControls(PatternSettings& settings) {
 }  // namespace
 
 StudioFrame drawStudio(PatternSettings& settings, const CanvasView& canvas,
-                       const StudioStatus& status) {
+                       const StudioStatus& status, ColorPicker& picker) {
     StudioFrame frame;
 
     const ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -140,7 +188,7 @@ StudioFrame drawStudio(PatternSettings& settings, const CanvasView& canvas,
 
     const float scale = ImGui::GetStyle().FontScaleDpi;
     ImGui::BeginChild("controls", ImVec2(kControlsWidth * scale, 0), ImGuiChildFlags_Borders);
-    drawControls(settings);
+    drawControls(settings, picker);
     ImGui::EndChild();
 
     ImGui::SameLine();
