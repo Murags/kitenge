@@ -16,6 +16,8 @@ constexpr SymmetryRule kRules[] = {SymmetryRule::Translate, SymmetryRule::FourFo
                                    SymmetryRule::Mirror};
 
 constexpr float kControlsWidth = 300.0f;
+constexpr int kMinPalette = 2;
+constexpr int kMaxPalette = 8;
 
 ImVec4 toImVec4(Color c) {
     return ImVec4(c.r / 255.0f, c.g / 255.0f, c.b / 255.0f, c.a / 255.0f);
@@ -86,15 +88,43 @@ void drawColors(PatternSettings& settings, ColorPicker& picker) {
         ImGui::PopID();
     }
 
-    ImGui::SameLine(0.0f, ImGui::GetStyle().ItemSpacing.x * 4);
-    if (swatch("##background", settings.background, picker.target == count)) {
+    // Add a colour (a copy of the selected one) or remove the selected one.
+    // Motifs look colours up by index modulo the palette size, so every
+    // palette length still colours them.
+    ImGui::SameLine();
+    ImGui::BeginDisabled(count >= kMaxPalette);
+    if (ImGui::Button("+", ImVec2(ImGui::GetFrameHeight(), 0))) {
+        const Color copy = picker.target < count
+                               ? settings.palette[static_cast<std::size_t>(picker.target)]
+                               : settings.background;
+        settings.palette.push_back(copy);
         picker.target = count;
+    }
+    ImGui::EndDisabled();
+    ImGui::SetItemTooltip("Add a colour");
+    ImGui::SameLine();
+    ImGui::BeginDisabled(count <= kMinPalette || picker.target >= count);
+    if (ImGui::Button("-", ImVec2(ImGui::GetFrameHeight(), 0))) {
+        settings.palette.erase(settings.palette.begin() + picker.target);
+        picker.target = std::max(0, picker.target - 1);
+    }
+    ImGui::EndDisabled();
+    ImGui::SetItemTooltip("Remove the selected colour");
+
+    ImGui::Spacing();
+    if (swatch("##background", settings.background,
+               picker.target == static_cast<int>(settings.palette.size()))) {
+        picker.target = static_cast<int>(settings.palette.size());
     }
     ImGui::SameLine();
     ImGui::TextDisabled("background");
 
     ImGui::Spacing();
-    Color& editing = picker.target == count
+    const int newCount = static_cast<int>(settings.palette.size());
+    if (picker.target > newCount) {
+        picker.target = newCount;
+    }
+    Color& editing = picker.target == newCount
                          ? settings.background
                          : settings.palette[static_cast<std::size_t>(picker.target)];
     picker.draw(editing);
