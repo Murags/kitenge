@@ -4,6 +4,7 @@
 
 #include "core/PatternSettings.h"
 #include "ui/CanvasView.h"
+#include "ui/ColorPicker.h"
 
 namespace kitenge {
 
@@ -30,8 +31,8 @@ struct StudioFrame {
 
 // Draws the whole studio window, as in the proposal mock-up: top bar,
 // controls on the left, the pattern canvas on the right and a status line
-// underneath. Edits `settings` in place.
+// underneath. Edits `settings` in place; colours are edited with `picker`.
 StudioFrame drawStudio(PatternSettings& settings, const CanvasView& canvas,
-                       const StudioStatus& status);
+                       const StudioStatus& status, ColorPicker& picker);
 
 }  // namespace kitenge
