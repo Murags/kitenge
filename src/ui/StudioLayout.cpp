@@ -47,10 +47,11 @@ StudioActions drawTopBar() {
     buttonsWidth += style.ItemSpacing.x * 2.0f;
     ImGui::SameLine(ImGui::GetContentRegionMax().x - buttonsWidth);
 
-    // Animation is Checkpoint 2 and the 3D preview Checkpoint 3.
-    ImGui::BeginDisabled();
     actions.animate = ImGui::Button(labels[0]);
+    ImGui::SetItemTooltip("Replay the pattern assembling itself, one copy at a time");
     ImGui::SameLine();
+    // The 3D preview is a stretch goal.
+    ImGui::BeginDisabled();
     actions.preview3d = ImGui::Button(labels[1]);
     ImGui::EndDisabled();
     ImGui::SameLine();

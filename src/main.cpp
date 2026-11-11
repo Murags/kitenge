@@ -9,10 +9,12 @@
 #include <string>
 #include <vector>
 
+#include "core/DoubleBuffer.h"
 #include "core/Framebuffer.h"
 #include "core/PatternSettings.h"
 #include "motifs/Export.h"
 #include "render/PatternRenderer.h"
+#include "symmetry/Assembly.h"
 #include "ui/CanvasView.h"
 #include "ui/StudioLayout.h"
 
@@ -21,10 +23,13 @@ namespace {
 constexpr int kWindowWidth = 1280;
 constexpr int kWindowHeight = 800;
 
-// Redraws the whole pattern into the framebuffer with our own rasteriser.
-void renderPattern(kitenge::Framebuffer& fb, const kitenge::PatternSettings& settings,
-                   kitenge::StudioStatus& status) {
-    status.tilesDrawn = kitenge::render::drawPattern(fb, settings, settings.render);
+// Redraws the pattern into the back buffer with our own rasteriser, then
+// swaps it to the front. `maxTiles` < 0 draws every tile.
+void renderPattern(kitenge::DoubleBuffer& buffers, const kitenge::PatternSettings& settings,
+                   kitenge::StudioStatus& status, int maxTiles = -1) {
+    status.tilesDrawn =
+        kitenge::render::drawPattern(buffers.back(), settings, settings.render, maxTiles);
+    buffers.swap();
 }
 
 struct Options {
@@ -118,7 +123,8 @@ int main(int argc, char** argv) {
         settings.motifIndex = options.motifIndex;
         int framesDrawn = 0;
         kitenge::StudioStatus status;
-        kitenge::Framebuffer framebuffer;
+        kitenge::DoubleBuffer buffers;
+        kitenge::AssemblyPlayer assembly;
         kitenge::CanvasView canvas(renderer);
         int canvasWidth = 0;
         int canvasHeight = 0;
@@ -144,13 +150,21 @@ int main(int argc, char** argv) {
 
             // Resize to the size the layout asked for last frame, then redraw the
             // pattern only when something has changed.
-            if (canvasWidth != framebuffer.width() || canvasHeight != framebuffer.height()) {
-                framebuffer.resize(canvasWidth, canvasHeight);
+            if (canvasWidth != buffers.width() || canvasHeight != buffers.height()) {
+                buffers.resize(canvasWidth, canvasHeight);
                 dirty = true;
             }
-            if (dirty) {
-                renderPattern(framebuffer, settings, status);
-                canvas.upload(framebuffer);
+            if (assembly.playing()) {
+                // Each frame shows a few more copies of the motif.
+                const int visible = assembly.update(io.DeltaTime);
+                renderPattern(buffers, settings, status, visible);
+                canvas.upload(buffers.front());
+                status.message = assembly.playing() ? "assembling " + std::to_string(visible) +
+                                                          " / " + std::to_string(assembly.total())
+                                                    : "";
+            } else if (dirty) {
+                renderPattern(buffers, settings, status);
+                canvas.upload(buffers.front());
                 dirty = false;
             }
 
@@ -163,11 +177,18 @@ int main(int argc, char** argv) {
             canvasWidth = frame.canvasWidth;
             canvasHeight = frame.canvasHeight;
             if (settings != before) {
+                // Any change cancels a running assembly and redraws in full.
+                assembly.stop();
+                status.message.clear();
                 dirty = true;
+            }
+            if (frame.actions.animate) {
+                assembly.start(
+                    kitenge::render::tileCount(settings, buffers.width(), buffers.height()));
             }
             if (frame.actions.exportImage) {
                 const char* path = "kitenge-pattern.bmp";
-                status.message = kitenge::writeBmp(framebuffer, path)
+                status.message = kitenge::writeBmp(buffers.front(), path)
                                      ? std::string("saved ") + path
                                      : std::string("could not save ") + path;
             }
